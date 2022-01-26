@@ -111,6 +111,7 @@ versions += [
   scoveragePlugin: "4.0.1",
   shadowPlugin: "5.2.0",
   slf4j: "1.7.30",
+  slf4jlog4j12: "2.0.0-alpha1",
   snappy: "1.1.7.3",
   spotbugs: "4.0.3",
   spotbugsPlugin: "4.2.4",
@@ -190,5 +191,6 @@ libs += [
   jfreechart: "jfreechart:jfreechart:$versions.jfreechart",
   mavenArtifact: "org.apache.maven:maven-artifact:$versions.mavenArtifact",
   zstd: "com.github.luben:zstd-jni:$versions.zstd",
-  httpclient: "org.apache.httpcomponents:httpclient:$versions.httpclient"
+  httpclient: "org.apache.httpcomponents:httpclient:$versions.httpclient",
+  slf4jlog4j12: "org.slf4j:slf4j-log4j12:$versions.slf4jlog4j12"
 ]

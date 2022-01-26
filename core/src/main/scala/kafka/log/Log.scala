@@ -26,7 +26,6 @@ import java.util.Optional
 import java.util.concurrent.atomic._
 import java.util.concurrent.{ConcurrentNavigableMap, ConcurrentSkipListMap, TimeUnit}
 import java.util.regex.Pattern
-
 import kafka.api.{ApiVersion, KAFKA_0_10_0_IV0}
 import kafka.common.{LogSegmentOffsetOverflowException, LongRef, OffsetsOutOfOrderException, UnexpectedAppendOffsetException}
 import kafka.message.{BrokerCompressionCodec, CompressionCodec, NoCompressionCodec}
@@ -41,7 +40,7 @@ import org.apache.kafka.common.record._
 import org.apache.kafka.common.requests.FetchResponse.AbortedTransaction
 import org.apache.kafka.common.requests.ProduceResponse.RecordError
 import org.apache.kafka.common.requests.{EpochEndOffset, ListOffsetRequest}
-import org.apache.kafka.common.utils.{Time, Utils}
+import org.apache.kafka.common.utils.{OperatingSystem, Time, Utils}
 import org.apache.kafka.common.{InvalidRecordException, KafkaException, TopicPartition}
 
 import scala.jdk.CollectionConverters._
@@ -2227,6 +2226,9 @@ class Log(@volatile private var _dir: File,
    * @throws IOException if the file can't be renamed and still exists
    */
   private def deleteSegmentFiles(segments: Iterable[LogSegment], asyncDelete: Boolean): Unit = {
+    // On windows the renaming operation will failed if the file is still opened
+    if (OperatingSystem.IS_WINDOWS) segments.foreach(_.closeHandlers())
+
     segments.foreach(_.changeFileSuffixes("", Log.DeletedFileSuffix))
 
     def deleteSegments(): Unit = {
@@ -2334,6 +2336,12 @@ class Log(@volatile private var _dir: File,
    */
   @threadsafe
   def addSegment(segment: LogSegment): LogSegment = this.segments.put(segment.baseOffset, segment)
+
+  def safeAddSegment(segment: LogSegment): Unit = {
+    lock synchronized {
+      addSegment(segment)
+    }
+  }
 
   private def maybeHandleIOException[T](msg: => String)(fun: => T): T = {
     try {

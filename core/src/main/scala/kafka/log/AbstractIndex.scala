@@ -106,6 +106,8 @@ abstract class AbstractIndex(@volatile private var _file: File, val baseOffset: 
 
   protected val lock = new ReentrantLock
 
+  private var handlerClosed: Boolean = false
+
   @volatile
   protected var mmap: MappedByteBuffer = {
     val newlyCreated = file.createNewFile()
@@ -261,6 +263,7 @@ abstract class AbstractIndex(@volatile private var _file: File, val baseOffset: 
     // See https://issues.apache.org/jira/browse/KAFKA-4614 for the details.
     inLock(lock) {
       safeForceUnmap()
+      handlerClosed = true
     }
   }
 
@@ -312,6 +315,8 @@ abstract class AbstractIndex(@volatile private var _file: File, val baseOffset: 
 
   protected def safeForceUnmap(): Unit = {
     if (mmap != null) {
+      if (handlerClosed)
+        return
       try forceUnmap()
       catch {
         case t: Throwable => error(s"Error unmapping index $file", t)
